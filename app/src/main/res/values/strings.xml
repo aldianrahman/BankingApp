@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">RaksaOnlineCompose</string>
+    <string name="auto_text">AUTO</string>
+    <string name="non_auto_text">NON AUTO</string>
+</resources>

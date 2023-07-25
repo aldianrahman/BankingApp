@@ -69,7 +69,6 @@ import coil.request.ImageRequest
 import coil.size.Size
 import com.example.raksaonlinecompose.R
 import com.example.raksaonlinecompose.bottom_nav.BottomMenuContent
-import com.example.raksaonlinecompose.model.CardPolicy
 import com.example.raksaonlinecompose.route.ScreenRoute
 import com.example.raksaonlinecompose.ui.theme.cardPolicy
 import com.example.raksaonlinecompose.ui.theme.colorGradient
@@ -78,6 +77,12 @@ import com.example.raksaonlinecompose.ui.theme.revamp_stroke_card
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.res.stringResource
+import androidx.navigation.NavHostController
+import com.example.raksaonlinecompose.dao.CardDao
+import com.example.raksaonlinecompose.dao.HistoryDao
+import com.example.raksaonlinecompose.db.AppDatabase
+import com.example.raksaonlinecompose.entity.Card
+import com.example.raksaonlinecompose.entity.History
 import com.example.raksaonlinecompose.model.ButtonProgress
 import com.example.raksaonlinecompose.model.IconButtonHome
 import com.example.raksaonlinecompose.model.PolicyActiveOrInactiveList
@@ -86,10 +91,11 @@ import com.example.raksaonlinecompose.ui.theme.darkGrayColor
 import com.example.raksaonlinecompose.ui.theme.lightGrayColor
 import com.example.raksaonlinecompose.ui.theme.mediumGrayColor
 import kotlinx.coroutines.delay
+import java.text.DecimalFormat
 
 
 @Composable
-fun HomeScreen() {
+fun HomeScreen(navController: NavHostController, db: CardDao) {
     var selectedItemIndex by remember {
         mutableStateOf(0)
     }
@@ -100,23 +106,25 @@ fun HomeScreen() {
             .fillMaxSize(),
     ){
         ViewPager(
+            db,
+            navController,
             context = context,
             items = listOf(
-                IconButtonHome(
-                    iconID = R.drawable.button_home_claim_revamp,
-                    "Pengajuan Klaim",
-                    "Home"
-                ),
+//                IconButtonHome(
+//                    iconID = R.drawable.button_home_claim_revamp,
+//                    "Pengajuan Klaim",
+//                    "Home"
+//                ),
                 IconButtonHome(
                     iconID = R.drawable.button_home_simulation_revamp,
-                    "Simulasi Premi",
+                    "Riwayat Transaksi",
                     "Home"
                 ),
-                IconButtonHome(
-                    iconID = R.drawable.button_home_towing_revamp,
-                    "Bantuan Derek",
-                    "Home"
-                ),
+//                IconButtonHome(
+//                    iconID = R.drawable.button_home_towing_revamp,
+//                    "Bantuan Derek",
+//                    "Home"
+//                ),
                 IconButtonHome(
                     iconID = R.drawable.button_home_24hour_call_revamp,
                     "Layanan 24 Jam",
@@ -124,14 +132,14 @@ fun HomeScreen() {
                 ),
                 IconButtonHome(
                     iconID = R.drawable.button_location_info_revamp_new,
-                    "Lokasi Layanan Klaim",
+                    "Lokasi Layanan",
                     "Home"
                 ),
-                IconButtonHome(
-                    iconID = R.drawable.button_service_revamp,
-                    "Bengkel Terdekat",
-                    "Home"
-                ),
+//                IconButtonHome(
+//                    iconID = R.drawable.button_service_revamp,
+//                    "Bengkel Terdekat",
+//                    "Home"
+//                ),
             ),
             selectedItemIndex
         ){
@@ -165,15 +173,15 @@ fun HomeScreen() {
                 BottomMenuContent("Home",
                     if (selectedItemIndex == 0) revamp_stroke_card else Color.White,
                     if (selectedItemIndex == 0) R.drawable.home_buttom_nav_click else R.drawable.home_buttom_nav),
-                BottomMenuContent("My Policy",
+                BottomMenuContent("My Portofolio",
                     if (selectedItemIndex == 1) revamp_stroke_card else Color.White,
                     if (selectedItemIndex == 1) R.drawable.mypolicy_buttom_nav_click else R.drawable.mypolicy_buttom_nav),
-                BottomMenuContent("History",
+                BottomMenuContent("Promo",
                     if (selectedItemIndex == 2) revamp_stroke_card else Color.White,
                     if (selectedItemIndex == 2) R.drawable.history_buttom_nav_click else R.drawable.history_buttom_nav),
-                BottomMenuContent("Profile",
-                    if (selectedItemIndex == 3) revamp_stroke_card else Color.White,
-                    if (selectedItemIndex == 3) R.drawable.profile_buttom_nav_click else R.drawable.profile_buttom_nav),
+//                BottomMenuContent("Profile",
+//                    if (selectedItemIndex == 3) revamp_stroke_card else Color.White,
+//                    if (selectedItemIndex == 3) R.drawable.profile_buttom_nav_click else R.drawable.profile_buttom_nav),
             ),
             modifier = Modifier.align(Alignment.BottomCenter)
         ){index->
@@ -213,7 +221,8 @@ fun GifImage(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CardViewPager(
-    dataCard: List<CardPolicy>,
+    dataCard: List<Card>,
+    navController: NavHostController
 ) {
     val pagerState = rememberPagerState()
     var indexState by remember { mutableStateOf(0) }
@@ -229,7 +238,7 @@ fun CardViewPager(
                     .clip(RoundedCornerShape(10.dp))
                     .background(gradientColor())
             ){
-                DataCardView(dataCard,indexState)
+                DataCardView(dataCard,indexState, navController = navController)
             }
         }else{
             DataCardNull()
@@ -268,10 +277,19 @@ fun CardViewPager(
 }
 
 @Composable
-fun DataCardView(dataCard: List<CardPolicy>, indexState: Int) {
+fun DataCardView(dataCard: List<Card>, indexState: Int,navController: NavHostController) {
     Box(modifier = Modifier.fillMaxSize()) {
+        Text(
+            "Aldian Rahman",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            modifier = Modifier
+                .padding(18.dp)
+                .align(Alignment.TopStart)
+        )
         Image(
-            painterResource(R.drawable.raksa_online_logo_main),
+            painterResource(R.drawable.logo_main),
             contentDescription = null,
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -281,10 +299,12 @@ fun DataCardView(dataCard: List<CardPolicy>, indexState: Int) {
         )
         Box(
             modifier = Modifier.align(Alignment.BottomEnd)
-                .padding(10.dp)
+                .padding(10.dp).clickable {
+                    navController?.navigate(ScreenRoute.ScanScreen.withArgs(dataCard,indexState))
+                }
         ){
             Text(
-                "Upgrade & Renewal",
+                "Scan To Pay",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
@@ -300,14 +320,14 @@ fun DataCardView(dataCard: List<CardPolicy>, indexState: Int) {
             verticalArrangement = Arrangement.SpaceAround
         ) {
             Text(
-                "Nomor Polis",
+                "Nomor Kartu",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
                 color = revamp_stroke_card,
                 modifier = Modifier.padding(start = 18.dp)
             )
             Text(
-                dataCard[indexState].noPolicy,
+                dataCard[indexState].noCard,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
@@ -317,14 +337,19 @@ fun DataCardView(dataCard: List<CardPolicy>, indexState: Int) {
                 modifier = Modifier.height(15.dp)
             )
             Text(
-                "Periode Polis",
+                "Saldo",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
                 color = revamp_stroke_card,
                 modifier = Modifier.padding(start = 18.dp)
             )
+            val formatter = DecimalFormat.getCurrencyInstance() as DecimalFormat
+            val symbols = formatter.decimalFormatSymbols
+            symbols.currencySymbol = "Rp. "
+            formatter.decimalFormatSymbols = symbols
+            val formattedAmount = formatter.format(dataCard[indexState].amount)
             Text(
-                dataCard[indexState].datePolicy,
+                formattedAmount,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
@@ -407,6 +432,8 @@ fun DataCardNull() {
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ViewPager(
+    db: CardDao,
+    navController: NavHostController,
     context: Context,
     items: List<IconButtonHome>,
     indexClick: Int = 0,
@@ -427,12 +454,16 @@ fun ViewPager(
             contentAlignment = Alignment.Center
         ) {
             if (indexClick == 0 || index1 == 0){
-                Beranda(chunkedList)
+                Beranda(db = db,chunkedList, navController = navController)
             }else if (indexClick == 1 || index1 == 1){
-                MyPolicy(
-                    Modifier.align(Alignment.TopStart),
-                    context
-                )
+                val dbHistory: HistoryDao = AppDatabase.getInstance(context)?.historyDao()!!
+                val dataHistory = dbHistory.gelAllHistory()
+
+                ListHistory(dataHistory, modifier = Modifier.align(Alignment.TopStart))
+//                MyPolicy(
+//                    Modifier.align(Alignment.TopStart),
+//                    context
+//                )
             }else if (indexClick == 2 || index1 == 2){
                 Column(
                     modifier = Modifier.align(Alignment.TopStart),
@@ -471,6 +502,96 @@ fun ViewPager(
         }
     }
 }
+
+@Composable
+fun ListHistory(
+    dataHistory: List<History>,
+    modifier: Modifier
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.SpaceBetween,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        TopHeader(
+            modifier = Modifier.fillMaxWidth(),
+            "My History"
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+        ){
+            Column(
+                modifier = Modifier.align(Alignment.TopStart)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.CenterEnd
+                ){
+                    Image(
+                        painterResource(R.drawable.icon_guides),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .height(35.dp)
+                            .width(35.dp)
+                            .padding(5.dp)
+                    )
+                }
+                LazyColumn {
+                    items(dataHistory){
+                    Card(
+                        modifier = Modifier
+                            .padding(10.dp)
+                            .fillMaxWidth()
+//                                    .combinedClickable(
+//                                        onClick = {Toast.makeText(context, items.claimNo, Toast.LENGTH_SHORT).show()},
+//                                        onLongClick = {Toast.makeText(context, items.status, Toast.LENGTH_SHORT).show()},
+//                                        onDoubleClick = {Toast.makeText(context, items.vehicle.toString(), Toast.LENGTH_SHORT).show()}
+//                                    )
+                        ,
+                        colors = CardDefaults.cardColors(Color.White),
+                        elevation = CardDefaults.cardElevation(4.dp),
+
+                        ) {
+                        Column(
+                            modifier = Modifier
+                                .padding(10.dp)
+                                .fillMaxWidth()
+                        ) {
+                            Text(
+                                "Id Transaksi ${it.id}",
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth(),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 25.sp
+                            )
+                            Spacer(
+                                modifier = Modifier.height(10.dp)
+                            )
+                            Text("No Kartu : ${it.noCard}")
+                            Text("Nama Bank : ${it.bankName}")
+                            Text("Nama Merchant : ${it.merchant}")
+                            Text("Id User : ${it.idUser}")
+                            Text("Saldo Awal : ${it.amount}")
+                            Text("Saldo Akhir : ${it.newAmount}")
+                            Text("Jumlah Transaksi : ${it.value}")
+                            Text("Status Transaksi : ${it.status}")
+                        }
+                    }
+                        if (it == dataHistory.last()){
+                            Spacer(
+                                modifier = Modifier.height(100.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+        }
+    }
+}
+
 @Composable
 fun MyPolicy(
     modifier: Modifier,
@@ -740,7 +861,7 @@ fun TabLayoutScreenHistory(context: Context) {
                     items = listOf(
                         ButtonProgress("Klaim", if(btnClick == 0) revamp_main else Color.White),
                         ButtonProgress("Bantuan Derek", if(btnClick == 1) revamp_main else Color.White),
-                        ButtonProgress("Simulasi Premi", if(btnClick == 2) revamp_main else Color.White),
+                        ButtonProgress("Riwayat Transaksi", if(btnClick == 2) revamp_main else Color.White),
                     )
                 ){index ->
                     btnClick = index
@@ -761,7 +882,7 @@ fun TabLayoutScreenHistory(context: Context) {
                         ButtonProgress("Klaim", if(btnClickHistory == 0) revamp_main else Color.White),
                         ButtonProgress("Bantuan Derek", if(btnClickHistory == 1) revamp_main else Color.White),
                         ButtonProgress("Upgrade & Renewal", if(btnClickHistory == 2) revamp_main else Color.White),
-                        ButtonProgress("Simulasi Premi", if(btnClickHistory == 3) revamp_main else Color.White),
+                        ButtonProgress("Riwayat Transaksi", if(btnClickHistory == 3) revamp_main else Color.White),
                     )
                 ){index ->
                     btnClickHistory = index
@@ -1180,7 +1301,15 @@ fun PolicyActiveOrInactive(
 }
 
 @Composable
-fun Beranda(chunkedList: List<List<IconButtonHome>>) {
+fun Beranda(
+    db: CardDao,
+    chunkedList: List<List<IconButtonHome>>,
+    navController: NavHostController
+) {
+    val amountCard1 by remember { mutableStateOf(5000000L) }
+    val amountCard2 by remember { mutableStateOf(600000L) }
+
+
     Column(
         verticalArrangement = Arrangement.SpaceBetween,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -1199,10 +1328,8 @@ fun Beranda(chunkedList: List<List<IconButtonHome>>) {
                     modifier = Modifier.height(10.dp)
                 )
                 CardViewPager(
-                    dataCard = listOf(
-                        CardPolicy("01-M-00030-000-01-2022","01-Jan-2025"),
-                        CardPolicy("01-M-00030-000-01-2022","01-Jan-2025"),
-                    )
+                    dataCard = db.gelAllCard(),
+                    navController = navController
                 )
                 Spacer(
                     modifier = Modifier.height(10.dp)
@@ -1256,7 +1383,8 @@ fun Beranda(chunkedList: List<List<IconButtonHome>>) {
                 )
                 CardViewPager(
                     dataCard = listOf(
-                    )
+                    ),
+                    navController = navController
                 )
                 Spacer(
                     modifier = Modifier.height(100.dp)
@@ -1369,14 +1497,14 @@ fun TopHeader(
     ) {
         Column(
             modifier = Modifier.padding(10.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.SpaceBetween,
         ) {
             if (s == ScreenRoute.HomeScreen.route){
                 Image(
-                    painterResource(R.drawable.raksa_online_logo_main),
+                    painterResource(R.drawable.logo_main),
                     contentDescription = null,
                     modifier = Modifier
-                        .width(171.dp)
+                        .width(100.dp)
                         .height(30.dp)
                 )
                 Spacer(

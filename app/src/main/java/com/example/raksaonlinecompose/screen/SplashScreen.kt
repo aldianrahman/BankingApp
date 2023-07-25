@@ -23,9 +23,8 @@ fun SplashScreen(
             .fillMaxSize()
     ) {
         Image(
-            painter = painterResource(R.drawable.splash_screen_ver4),
+            painter = painterResource(R.drawable.splash_screen),
             contentDescription = null,
-            contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
         LaunchedEffect(key1 = true) {

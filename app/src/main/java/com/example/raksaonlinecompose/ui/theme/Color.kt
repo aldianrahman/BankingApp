@@ -29,7 +29,7 @@ val disclaimerGray = Color(255, 190, 189)
 val bannerDivider = Color(237, 236, 236)
 val statusBarDone = Color(102, 204, 102)
 val statusBarRemain = Color(102, 102, 102)
-val blue = Color(17, 120, 231)
+//val blue = Color(17, 120, 231)
 val black = Color(0, 0, 0)
 val lightBlue = Color(29, 157, 191)
 val yellow_notification = Color(113, 125, 19)
@@ -52,6 +52,21 @@ val lightGrayColor = Color(240, 240, 240)
 
 val darkGrayColor = Color(7, 7, 7)
 val mediumGrayColor = Color(0xFF5A5A5A)
+
+val darkGray = Color(0xFF1a1717)
+val darkBlue = Color(0xFF18192b)
+val white = Color(0xFFF3F3F3)
+val gray = Color(0xFF3F3F3F)
+val orange = Color(0xFFdb660d)
+val blueGray = Color(0xFF404352)
+val nightDark = Color(0xFF403757)
+
+val purple = Color(0xFF9b11ba)
+
+val redOrange = Color(0xFFe84a23)
+val green = Color(0xFF0ddb25)
+val blue = Color(0xFF140ddb)
+val brightBlue = Color(0xFF027cf5)
 
 
 

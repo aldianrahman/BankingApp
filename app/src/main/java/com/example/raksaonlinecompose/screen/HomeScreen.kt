@@ -92,10 +92,34 @@ import com.example.raksaonlinecompose.ui.theme.lightGrayColor
 import com.example.raksaonlinecompose.ui.theme.mediumGrayColor
 import kotlinx.coroutines.delay
 import java.text.DecimalFormat
+import android.graphics.Paint
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.*
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.Dp
+import com.example.raksaonlinecompose.model.DetailTransaction
+import com.example.raksaonlinecompose.model.PieChartInput
+import com.example.raksaonlinecompose.ui.theme.gray
+import com.example.raksaonlinecompose.ui.theme.white
+import kotlin.math.PI
+import kotlin.math.atan2
 
 
 @Composable
-fun HomeScreen(navController: NavHostController, db: CardDao) {
+fun HomeScreen(
+    navController: NavHostController,
+    db: CardDao,
+    listDataTransaction: MutableList<PieChartInput>
+) {
     var selectedItemIndex by remember {
         mutableStateOf(0)
     }
@@ -106,6 +130,7 @@ fun HomeScreen(navController: NavHostController, db: CardDao) {
             .fillMaxSize(),
     ){
         ViewPager(
+            listDataTransaction,
             db,
             navController,
             context = context,
@@ -116,7 +141,7 @@ fun HomeScreen(navController: NavHostController, db: CardDao) {
 //                    "Home"
 //                ),
                 IconButtonHome(
-                    iconID = R.drawable.button_home_simulation_revamp,
+                    iconID = R.drawable.book,
                     "Riwayat Transaksi",
                     "Home"
                 ),
@@ -126,12 +151,12 @@ fun HomeScreen(navController: NavHostController, db: CardDao) {
 //                    "Home"
 //                ),
                 IconButtonHome(
-                    iconID = R.drawable.button_home_24hour_call_revamp,
+                    iconID = R.drawable.telephone,
                     "Layanan 24 Jam",
                     "Home"
                 ),
                 IconButtonHome(
-                    iconID = R.drawable.button_location_info_revamp_new,
+                    iconID = R.drawable.rotate,
                     "Lokasi Layanan",
                     "Home"
                 ),
@@ -173,15 +198,15 @@ fun HomeScreen(navController: NavHostController, db: CardDao) {
                 BottomMenuContent("Home",
                     if (selectedItemIndex == 0) revamp_stroke_card else Color.White,
                     if (selectedItemIndex == 0) R.drawable.home_buttom_nav_click else R.drawable.home_buttom_nav),
-                BottomMenuContent("My Portofolio",
+                BottomMenuContent("History Transaksi",
                     if (selectedItemIndex == 1) revamp_stroke_card else Color.White,
                     if (selectedItemIndex == 1) R.drawable.mypolicy_buttom_nav_click else R.drawable.mypolicy_buttom_nav),
                 BottomMenuContent("Promo",
                     if (selectedItemIndex == 2) revamp_stroke_card else Color.White,
                     if (selectedItemIndex == 2) R.drawable.history_buttom_nav_click else R.drawable.history_buttom_nav),
-//                BottomMenuContent("Profile",
-//                    if (selectedItemIndex == 3) revamp_stroke_card else Color.White,
-//                    if (selectedItemIndex == 3) R.drawable.profile_buttom_nav_click else R.drawable.profile_buttom_nav),
+                BottomMenuContent("Portofolio",
+                    if (selectedItemIndex == 3) revamp_stroke_card else Color.White,
+                    if (selectedItemIndex == 3) R.drawable.profile_buttom_nav_click else R.drawable.profile_buttom_nav),
             ),
             modifier = Modifier.align(Alignment.BottomCenter)
         ){index->
@@ -388,9 +413,15 @@ fun DataCardNull() {
                     verticalArrangement = Arrangement.SpaceAround
                 ) {
 
-                    GifImage()
+                    Image(
+                        painterResource(R.drawable.logo_main),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .height(103.dp)
+                            .width(167.dp),
+                    )
                     Text(
-                        text = "Anda belum memiliki polis aktif, tambahkan polis sekarang?",
+                        text = "Nantikan promo menarik lainya",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = revamp_stroke_card,
@@ -406,13 +437,8 @@ fun DataCardNull() {
                                 horizontalArrangement = Arrangement.SpaceEvenly,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Image(
-                                    painterResource(R.drawable.add_policy),
-                                    contentDescription = null,
-                                    modifier = Modifier.padding(10.dp).size(24.dp)
-                                )
                                 Text(
-                                    text = "Tambahkan Polis",
+                                    text = "Detail Promo",
                                     fontSize = 11.sp,
                                     color = Color.White,
                                     fontWeight = FontWeight.Bold,
@@ -432,6 +458,7 @@ fun DataCardNull() {
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ViewPager(
+    listDataTransaction: MutableList<PieChartInput>,
     db: CardDao,
     navController: NavHostController,
     context: Context,
@@ -443,6 +470,9 @@ fun ViewPager(
     var indexState by remember { mutableStateOf(0) }
     val maxRows = 3
     val chunkedList = items.chunked(maxRows)
+    var alertDialogOpen by remember { mutableStateOf(false) }
+    var detailData = mutableListOf<DetailTransaction>()
+    var titleTransaction by remember { mutableStateOf("") }
     LaunchedEffect(indexClick) {
         pagerState.scrollToPage(indexClick)
     }
@@ -472,26 +502,127 @@ fun ViewPager(
                 ) {
                     TopHeader(
                         modifier = Modifier.fillMaxWidth(),
-                        "History"
+                        "Promo"
+                    )
+//                    Box(
+//                        modifier = Modifier
+//                            .fillMaxSize()
+//                    ){
+//                        Column(
+//                            modifier = Modifier.align(Alignment.TopStart)
+//                        ) {
+//                            TabLayoutScreenHistory(context)
+//                        }
+//
+//                    }
+                }
+            }else if (indexClick == 3 || index1 == 3){
+                Column(
+                    modifier = Modifier
+                        .background(Color.Gray)
+                        .padding(5.dp)
+                        .align(Alignment.Center)
+                    ,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ){
+                    Text(
+                        "Double Click To View Details",
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(top = 70.dp)
                     )
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
                     ){
-                        Column(
-                            modifier = Modifier.align(Alignment.TopStart)
-                        ) {
-                            TabLayoutScreenHistory(context)
+                        PieChart(
+                            input = listDataTransaction,
+                            centerText = "Portofolio"
+                        )
+                        {
+                            titleTransaction = "${it.description} ${it.valueF} %"
+                            it.onDetail = false
+                            alertDialogOpen = true
+                            detailData = it.detailTransaction as MutableList<DetailTransaction>
                         }
-
                     }
                 }
-            }else if (indexClick == 3 || index1 == 3){
+                if (alertDialogOpen) {
+                    AlertDialog(
+                        modifier = Modifier.fillMaxSize(),
+                        containerColor = Color.White,
+                        onDismissRequest = { alertDialogOpen = false },
+                        title = {
+                            Text(
+                                textAlign = TextAlign.Center,
+                                text =titleTransaction ,
+                                color = Color.White,
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    fontSize = 30.sp,
+                                    shadow = Shadow(
+                                        color = Color.Black,
+                                        offset = Offset(2f,2f),
+                                        blurRadius = 4f
+                                    )
+                                )
+                            )
+                        },
+                        text = {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                items(detailData){
+                                    Card(
+                                        modifier = Modifier
+                                            .padding(10.dp)
+                                            .fillMaxWidth()
+                                    ){
+                                        Text(
+                                            "Tanggal Transaksi : ${it.trx_date}",
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(5.dp),
+                                            textAlign = TextAlign.Center
+                                        )
+                                        Text(
+                                            "Nominal Transaksi : ${it.nominal}",
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(5.dp),
+                                            textAlign = TextAlign.Center
+                                        )
+                                    }
+                                }
+                            }
+                        },
+                        confirmButton = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Button(
+                                    onClick = { alertDialogOpen = false }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Close,
+                                        contentDescription = "Close Icon",
+                                        modifier = Modifier.size(24.dp),
+                                        tint = Color.Red
+                                    )
+                                }
+                            }
+                        }
+                    )
+                }
                 TopHeader(
                     modifier = Modifier.align(Alignment.TopCenter),
-                    "Profile"
+                    "Portofolio"
                 )
-                Text(text = "Page Index : $index1")
+
+//
+//                Text(text = "Page Index : $index1")
             }
 
 
@@ -500,6 +631,257 @@ fun ViewPager(
                 index(indexState) // Notify the external listener
             }
         }
+    }
+}
+
+@Composable
+fun PieChart(
+    modifier: Modifier = Modifier,
+    radius:Float = 300f,
+    innerRadius:Float = 100f,
+    transparentWidth:Float = 70f,
+    input:List<PieChartInput>,
+    centerText:String = "",
+    onDetail:(PieChartInput)->Unit
+) {
+    var circleCenter by remember {
+        mutableStateOf(Offset.Zero)
+    }
+
+    var inputList by remember {
+        mutableStateOf(input)
+    }
+    var isCenterTapped by remember {
+        mutableStateOf(false)
+    }
+
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ){
+        Canvas(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(true){
+                    detectTapGestures(
+                        onTap = { offset->
+                            val tapAngleInDegrees = (-atan2(
+                                x = circleCenter.y - offset.y,
+                                y = circleCenter.x - offset.x
+                            ) * (180f / PI).toFloat() - 90f).mod(360f)
+                            val centerClicked = if(tapAngleInDegrees<90) {
+                                offset.x<circleCenter.x+innerRadius && offset.y<circleCenter.y+innerRadius
+                            }else if(tapAngleInDegrees<180){
+                                offset.x>circleCenter.x-innerRadius && offset.y<circleCenter.y+innerRadius
+                            }else if(tapAngleInDegrees<270){
+                                offset.x>circleCenter.x-innerRadius && offset.y>circleCenter.y-innerRadius
+                            }else{
+                                offset.x<circleCenter.x+innerRadius && offset.y>circleCenter.y-innerRadius
+                            }
+
+                            if(centerClicked){
+                                inputList = inputList.map {
+                                    it.copy(isTapped = !isCenterTapped)
+                                }
+                                isCenterTapped = !isCenterTapped
+                            }else{
+                                val anglePerValue = 360f/input.sumOf {
+                                    it.value
+                                }
+                                var currAngle = 0f
+                                inputList.forEach { pieChartInput ->
+
+                                    currAngle += pieChartInput.value * anglePerValue
+                                    if(tapAngleInDegrees<currAngle){
+                                        val description = pieChartInput.description
+                                        inputList = inputList.map {
+                                            if(description == it.description){
+                                                it.copy(isTapped = !it.isTapped)
+                                            }else{
+                                                it.copy(isTapped = false)
+                                            }
+                                        }
+                                        return@detectTapGestures
+                                    }
+                                }
+                            }
+                        },
+                        onDoubleTap = { offset->
+                            val tapAngleInDegrees = (-atan2(
+                                x = circleCenter.y - offset.y,
+                                y = circleCenter.x - offset.x
+                            ) * (180f / PI).toFloat() - 90f).mod(360f)
+                            val centerClicked = if(tapAngleInDegrees<90) {
+                                offset.x<circleCenter.x+innerRadius && offset.y<circleCenter.y+innerRadius
+                            }else if(tapAngleInDegrees<180){
+                                offset.x>circleCenter.x-innerRadius && offset.y<circleCenter.y+innerRadius
+                            }else if(tapAngleInDegrees<270){
+                                offset.x>circleCenter.x-innerRadius && offset.y>circleCenter.y-innerRadius
+                            }else{
+                                offset.x<circleCenter.x+innerRadius && offset.y>circleCenter.y-innerRadius
+                            }
+
+                            if(centerClicked){
+                                inputList = inputList.map {
+                                    it.copy(onDetail = !isCenterTapped)
+                                }
+                                isCenterTapped = !isCenterTapped
+                            }else{
+                                val anglePerValue = 360f/input.sumOf {
+                                    it.value
+                                }
+                                var currAngle = 0f
+                                inputList.forEach { pieChartInput ->
+
+                                    onDetail(pieChartInput)
+
+                                    currAngle += pieChartInput.value * anglePerValue
+                                    if(tapAngleInDegrees<currAngle){
+                                        val description = pieChartInput.description
+                                        inputList = inputList.map {
+                                            if(description == it.description){
+                                                it.copy(onDetail = !it.onDetail)
+                                            }else{
+                                                it.copy(onDetail = false)
+                                            }
+                                        }
+                                        return@detectTapGestures
+                                    }
+                                }
+                            }
+                        }
+                    )
+                }
+        ){
+            val width = size.width
+            val height = size.height
+            circleCenter = Offset(x= width/2f,y= height/2f)
+
+            val totalValue = input.sumOf {
+                it.value
+            }
+            val anglePerValue = 360f/totalValue
+            var currentStartAngle = 0f
+
+            inputList.forEach { pieChartInput ->
+                val scale = if(pieChartInput.isTapped) 1.1f else 1.0f
+                val angleToDraw = pieChartInput.value * anglePerValue
+                scale(scale){
+                    drawArc(
+                        color = pieChartInput.color,
+                        startAngle = currentStartAngle,
+                        sweepAngle = angleToDraw,
+                        useCenter = true,
+                        size = androidx.compose.ui.geometry.Size(
+                            width = radius * 2f,
+                            height = radius * 2f
+                        ),
+                        topLeft = Offset(
+                            (width-radius*2f)/2f,
+                            (height - radius*2f)/2f
+                        )
+                    )
+                    currentStartAngle += angleToDraw
+                }
+                var rotateAngle = currentStartAngle-angleToDraw/2f-90f
+                var factor = 1f
+                if(rotateAngle>90f){
+                    rotateAngle = (rotateAngle+180).mod(360f)
+                    factor = -0.92f
+                }
+
+                val percentage = (pieChartInput.valueF/totalValue.toFloat()*100).toInt()
+
+                drawContext.canvas.nativeCanvas.apply {
+                    if(percentage>3){
+                        rotate(rotateAngle){
+                            drawText(
+                                "$percentage %",
+                                circleCenter.x,
+                                circleCenter.y+(radius-(radius-innerRadius)/2f)*factor,
+                                Paint().apply {
+                                    textSize = 13.sp.toPx()
+                                    textAlign = Paint.Align.CENTER
+                                    color = white.toArgb()
+                                }
+                            )
+                        }
+                    }
+                }
+                if(pieChartInput.isTapped){
+                    val tabRotation = currentStartAngle - angleToDraw - 90f
+                    rotate(tabRotation){
+                        drawRoundRect(
+                            topLeft = circleCenter,
+                            size = androidx.compose.ui.geometry.Size(12f, radius * 1.2f),
+                            color = gray,
+                            cornerRadius = CornerRadius(15f,15f)
+                        )
+                    }
+                    rotate(tabRotation+angleToDraw){
+                        drawRoundRect(
+                            topLeft = circleCenter,
+                            size = androidx.compose.ui.geometry.Size(12f, radius * 1.2f),
+                            color = gray,
+                            cornerRadius = CornerRadius(15f,15f)
+                        )
+                    }
+                    rotate(rotateAngle){
+                        drawContext.canvas.nativeCanvas.apply {
+                            drawText(
+                                "${pieChartInput.description}: ${pieChartInput.valueF} %",
+                                circleCenter.x,
+                                circleCenter.y + radius*1.3f*factor,
+                                Paint().apply {
+                                    textSize = 22.sp.toPx()
+                                    textAlign = Paint.Align.CENTER
+                                    color = white.toArgb()
+                                    isFakeBoldText = true
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            if(inputList.first().isTapped){
+                rotate(-90f){
+                    drawRoundRect(
+                        topLeft = circleCenter,
+                        size = androidx.compose.ui.geometry.Size(12f, radius * 1.2f),
+                        color = gray,
+                        cornerRadius = CornerRadius(15f,15f)
+                    )
+                }
+            }
+            drawContext.canvas.nativeCanvas.apply {
+                drawCircle(
+                    circleCenter.x,
+                    circleCenter.y,
+                    innerRadius,
+                    Paint().apply {
+                        color = white.copy(alpha = 0.6f).toArgb()
+                        setShadowLayer(10f,0f,0f, gray.toArgb())
+                    }
+                )
+            }
+
+            drawCircle(
+                color = white.copy(0.2f),
+                radius = innerRadius+transparentWidth/2f
+            )
+
+        }
+        Text(
+            centerText,
+            modifier = Modifier
+                .width(Dp(innerRadius/1.5f))
+                .padding(10.dp),
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 17.sp,
+            textAlign = TextAlign.Center
+        )
+
     }
 }
 

@@ -497,6 +497,13 @@ fun ViewPager(
 //                    context
 //                )
             }else if (indexClick == 2 || index1 == 2){
+                val errorCode = """
+                    {
+                        "statusCode": 401,
+                        "error": "Unauthorized",
+                        "message": "Invalid token."
+                    }
+                """
                 Column(
                     modifier = Modifier.align(Alignment.TopStart),
                     verticalArrangement = Arrangement.SpaceBetween,
@@ -506,6 +513,8 @@ fun ViewPager(
                         modifier = Modifier.fillMaxWidth(),
                         "Promo"
                     )
+                    Text (errorCode)
+                    Text ("Response dari Endpoint & Bearer Token")
 //                    Box(
 //                        modifier = Modifier
 //                            .fillMaxSize()

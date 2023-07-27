@@ -98,8 +98,10 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.rotate
@@ -517,37 +519,110 @@ fun ViewPager(
 //                    }
                 }
             }else if (indexClick == 3 || index1 == 3){
+                val tabTitles = listOf("Donut Chart", "Line Chart")
+                val data = listOf(
+                    Pair(1, 3.0),
+                    Pair(2, 7.0),
+                    Pair(3, 8.0),
+                    Pair(4, 10.0),
+                    Pair(5, 5.0),
+                    Pair(6, 10.0),
+                    Pair(7, 1.0),
+                    Pair(8, 3.0),
+                    Pair(9, 5.0),
+                    Pair(10, 10.0),
+                    Pair(11, 7.0),
+                    Pair(12, 7.0),
+                )
+
+                // Define the selected tab index
+                var selectedTabIndex by remember { mutableStateOf(0) }
                 Column(
                     modifier = Modifier
                         .background(Color.Gray)
                         .padding(5.dp)
-                        .align(Alignment.Center)
+                        .align(Alignment.TopStart)
                     ,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ){
-                    Text(
-                        "Double Click To View Details",
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(top = 70.dp)
+                    TopHeader(
+                        modifier = Modifier,
+                        "Portofolio"
                     )
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                    ){
-                        PieChart(
-                            input = listDataTransaction,
-                            centerText = "Portofolio"
-                        )
-                        {
-                            titleTransaction = "${it.description} ${it.valueF} %"
-                            it.onDetail = false
-                            alertDialogOpen = true
-                            detailData = it.detailTransaction as MutableList<DetailTransaction>
+                    TabRow(
+                        selectedTabIndex,
+                        containerColor = lightGrayColor,
+                        contentColor = revamp_main,
+                        modifier = Modifier.background(Color.Transparent)
+                    ) {
+                        // Create a tab for each title
+                        tabTitles.forEachIndexed { index, title ->
+                            Tab(
+                                selected = selectedTabIndex == index,
+                                onClick = { selectedTabIndex = index },
+                            ) {
+                                Text(
+                                    text = title,
+                                    modifier = Modifier.padding(16.dp),
+                                    color = Color.Black
+                                )
+                            }
                         }
                     }
+
+
+
+                    // Content based on selected tab
+                    when (selectedTabIndex) {
+                        0 -> {
+                            // Content for Tab 1
+                            Text(
+                                "Double Click To View Details",
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(top = 70.dp)
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                            ){
+                                PieChart(
+                                    input = listDataTransaction,
+                                    centerText = "Portofolio"
+                                )
+                                {
+                                    titleTransaction = "${it.description} ${it.valueF} %"
+                                    it.onDetail = false
+                                    alertDialogOpen = true
+                                    detailData = it.detailTransaction as MutableList<DetailTransaction>
+                                }
+                            }
+                        }
+                        1 -> {
+                            // Content for Tab 2
+                            Text(
+                                "Line Chart",
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(top = 30.dp)
+                            )
+                            LineChart(
+                                data = data,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .align(CenterHorizontally)
+                                    .padding(bottom = 100.dp)
+                            )
+                            Divider()
+
+                        }
+                    }
+
+
                 }
                 if (alertDialogOpen) {
                     AlertDialog(
@@ -616,10 +691,7 @@ fun ViewPager(
                         }
                     )
                 }
-                TopHeader(
-                    modifier = Modifier.align(Alignment.TopCenter),
-                    "Portofolio"
-                )
+
 
 //
 //                Text(text = "Page Index : $index1")
